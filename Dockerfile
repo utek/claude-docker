@@ -1,0 +1,59 @@
+FROM debian:bookworm-slim
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    HOME=/home/claude \
+    CARGO_HOME=/home/claude/.cargo \
+    RUSTUP_HOME=/home/claude/.rustup \
+    PATH="/home/claude/.cargo/bin:/home/claude/.local/bin:${PATH}" \
+    UV_SYSTEM_PYTHON=1 \
+    PYTHONUNBUFFERED=1 \
+    GH_CONFIG_DIR=/config/gh \
+    GIT_CONFIG_GLOBAL=/config/git/config
+
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    ca-certificates \
+    curl \
+    git \
+    gnupg \
+    openssh-client \
+    python3 \
+    python3-venv \
+    python3-pip \
+    python-is-python3 \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install GitHub CLI
+RUN mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | gpg --dearmor -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+    && apt-get update && apt-get install -y --no-install-recommends gh \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user and directories
+RUN useradd -m -s /bin/bash -u 1000 claude \
+    && mkdir -p /config/gh /config/git /home/claude/.claude /home/claude/.config/claude /workspace \
+    && echo "{}" > /home/claude/.claude.json \
+    && chown -R claude:claude /config /home/claude /workspace
+
+USER claude
+
+# Install Rust
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain stable \
+    && . "$HOME/.cargo/env" \
+    && rustup component add clippy rustfmt
+
+# Install uv (Python package manager)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install Claude Code
+RUN curl -fsSL https://claude.ai/install.sh | bash
+
+WORKDIR /workspace
+
+CMD ["bash"]

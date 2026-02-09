@@ -1,0 +1,38 @@
+services:
+  claude-code:
+    build: .
+    image: claude-code:local
+    tty: true
+    stdin_open: true
+    working_dir: /workspace
+    command: ["sleep", "infinity"]
+    environment:
+      # Required environment variables
+      - ANTHROPIC_API_KEY
+      # Optional environment variables with defaults
+      - GITHUB_TOKEN
+      - GH_CONFIG_DIR=/config/gh
+      - GIT_CONFIG_GLOBAL=/config/git/config
+      - ANTHROPIC_AUTH_TOKEN=ollama
+      - ANTHROPIC_BASE_URL=http://host.docker.internal:11434
+    volumes:
+      - .:/workspace
+      - claude-config:/home/claude/.claude
+      - .\.claude.json:/home/claude/.claude.json
+      - claude-xdg-config:/home/claude/.config/claude
+      - gh-config:/config/gh
+      - git-config:/config/git
+    healthcheck:
+      test: ["CMD", "claude", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    user: "claude"
+    restart: unless-stopped
+
+volumes:
+  claude-config:
+  claude-xdg-config:
+  gh-config:
+  git-config:
