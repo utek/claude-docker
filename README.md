@@ -6,6 +6,31 @@ This repository provides a Docker image and Compose configuration for running Cl
 - Docker Desktop or Docker Engine with Docker Compose v2.
 
 ## Quick Start
+
+### Using Make (Recommended)
+
+The Makefile provides convenient shortcuts for common operations:
+
+```bash
+# Build the Docker image
+make build
+
+# Run Claude Code with Anthropic Cloud API
+make claude-cloud
+
+# Run Claude Code with Ollama (local models)
+make claude-ollama
+
+# Stop containers
+make stop-cloud
+make stop-ollama
+
+# Show help
+make help
+```
+
+### Using Docker Compose Directly
+
 ```bash
 # Build the Docker image
 docker compose build
@@ -18,6 +43,65 @@ docker compose exec claude-code claude "Summarize the repo"
 
 # Access the container shell
 docker compose exec claude-code bash
+```
+
+## Makefile Commands
+
+The included Makefile simplifies common tasks with the following commands:
+
+| Command | Description |
+|---------|-------------|
+| `make build` | Build the Docker image |
+| `make claude-cloud` | Run Claude Code with Anthropic cloud API |
+| `make claude-ollama` | Run Claude Code with Ollama (local models) |
+| `make stop-cloud` | Stop cloud API containers |
+| `make stop-ollama` | Stop Ollama containers |
+| `make help` | Show available commands |
+
+### Passing Extra Arguments
+
+You can pass additional arguments to Claude Code using `--`:
+
+```bash
+# Specify a model for Ollama
+make claude-ollama -- --model gpt-oss:latest
+
+# Specify a model for cloud API
+make claude-cloud -- --model claude-sonnet-4-5-20250929
+
+```
+
+### Custom Workspace Directory
+
+By default, the Makefile mounts the current directory (`$PWD`) as `/workspace`. You can override this with the `WORKSPACE_DIR` environment variable:
+
+```bash
+# Use a specific project directory
+WORKSPACE_DIR=~/projects/my-app make claude-ollama
+
+# Work with a different project while keeping your current shell location
+WORKSPACE_DIR=~/another-project make claude-cloud -- "Summarize the code"
+
+# Analyze a project in your home directory
+WORKSPACE_DIR=~/git/my-repo make claude-cloud -- "Review the README"
+```
+
+| Environment Variable | Default | Description |
+|---------------------|---------|-------------|
+| `WORKSPACE_DIR` | `$(PWD)` | Path to mount as `/workspace` inside the container |
+### Using Docker Compose Directly (Alternative)
+
+If you need more control over volume mounting, use `docker compose run` directly:
+
+```bash
+# Mount a specific directory to /workspace
+docker compose run --rm -v ~/project:/workspace claude-code claude "Analyze this code"
+
+# Mount with a working directory change
+docker compose run --rm -v ~/project:/workspace -w /workspace claude-code claude "Summarize the repo"
+
+# Mount SSH keys and a custom workspace
+docker compose run --rm -v ~/.ssh:/root/.ssh:ro -v ~/project:/workspace claude-code
 ```
 
 ## Configuration
@@ -138,12 +222,55 @@ docker compose exec claude-code python3 script.py
 docker compose exec claude-code echo "Hello World"
 ```
 
+## Docker Sibling Mode
+
+This container runs in **Docker sibling mode**, meaning it can launch and manage Docker containers on the host's Docker daemon. This is achieved by mounting the host's Docker socket (`/var/run/docker.sock`) into the container, rather than running a Docker daemon inside the container (Docker-in-Docker).
+
+### How It Works
+
+- The Docker CLI and Compose plugin are installed inside the container
+- The host's Docker socket is bind-mounted into the container
+- An entrypoint script automatically detects the socket's group ownership and adjusts permissions so the `claude` user can access it
+- Any `docker` or `docker compose` commands run inside the container will execute on the **host's** Docker daemon
+
+### Windows Docker Desktop
+
+This setup is designed for Windows Docker Desktop, which exposes the Docker socket at `/var/run/docker.sock` inside the WSL2 VM. No additional configuration is needed — Docker Desktop handles the socket exposure automatically.
+
+### Volume Mount Path Caveat
+
+When running `docker` commands from inside this container to launch sibling containers, **volume mount paths refer to the host filesystem**, not the container filesystem. For example:
+
+```bash
+# Inside the container, this mounts /workspace from the HOST, not from this container
+docker run -v /workspace:/app some-image
+```
+
+To mount a directory that exists inside this container into a sibling container, you need to use the corresponding host path. You can set `HOST_WORKSPACE_DIR` to help with this:
+
+```bash
+# In your host shell (PowerShell)
+$env:HOST_WORKSPACE_DIR = "C:\Users\you\project"
+
+# Inside the container, use the host path for sibling mounts
+docker run -v "$HOST_WORKSPACE_DIR:/app" some-image
+```
+
+### Disabling Docker Sibling Mode
+
+If you don't need Docker sibling mode, remove or comment out the Docker socket volume mount from `docker-compose.yml` and `claude.yml`:
+
+```yaml
+# - /var/run/docker.sock:/var/run/docker.sock
+```
+
 ## Security Considerations
 
 - Never commit your API key to version control
 - Use environment variables for sensitive data
 - Regularly update the Docker image to get security patches
-- The container runs as a non-root user for improved security
+- The container runs as a non-root user for improved security (the entrypoint starts as root only to fix Docker socket permissions, then drops to the `claude` user)
+- **Docker socket access**: Mounting the Docker socket grants the container the ability to manage all containers on the host. Only use this in trusted environments
 
 ## Multi-stage Build
 

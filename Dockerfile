@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     gnupg \
+    gosu \
     openssh-client \
     python3 \
     python3-venv \
@@ -35,11 +36,27 @@ RUN mkdir -p /etc/apt/keyrings \
     && apt-get update && apt-get install -y --no-install-recommends gh \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Docker CLI and Compose plugin (for sibling container mode)
+RUN install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" \
+       | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin \
+    && rm -rf /var/lib/apt/lists/*
+
 # Create non-root user and directories
 RUN useradd -m -s /bin/bash -u 1000 claude \
+    && groupadd -f docker \
+    && usermod -aG docker claude \
     && mkdir -p /config/gh /config/git /home/claude/.claude /home/claude/.config/claude /workspace \
     && echo "{}" > /home/claude/.claude.json \
     && chown -R claude:claude /config /home/claude /workspace
+
+# Add entrypoint for Docker socket permission handling
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 USER claude
 
@@ -56,4 +73,5 @@ RUN curl -fsSL https://claude.ai/install.sh | bash
 
 WORKDIR /workspace
 
+ENTRYPOINT ["entrypoint.sh"]
 CMD ["bash"]

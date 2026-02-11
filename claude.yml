@@ -20,13 +20,16 @@ services:
       - claude-xdg-config:/home/claude/.config/claude
       - gh-config:/config/gh
       - git-config:/config/git
+      # Docker sibling mode: mount host Docker socket
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       test: ["CMD", "claude", "--version"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    user: "claude"
+    # Run as root so entrypoint can fix Docker socket permissions, then drops to claude
+    user: "root"
     restart: unless-stopped
 
 volumes:
