@@ -21,6 +21,10 @@ make claude-cloud
 # Run Claude Code with Ollama (local models)
 make claude-ollama
 
+# Open a bash shell in the container
+make bash-cloud
+make bash-ollama
+
 # Stop containers
 make stop-cloud
 make stop-ollama
@@ -54,6 +58,8 @@ The included Makefile simplifies common tasks with the following commands:
 | `make build` | Build the Docker image |
 | `make claude-cloud` | Run Claude Code with Anthropic cloud API |
 | `make claude-ollama` | Run Claude Code with Ollama (local models) |
+| `make bash-cloud` | Open a bash shell (cloud image) |
+| `make bash-ollama` | Open a bash shell (Ollama image) |
 | `make stop-cloud` | Stop cloud API containers |
 | `make stop-ollama` | Stop Ollama containers |
 | `make help` | Show available commands |

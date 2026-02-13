@@ -1,9 +1,13 @@
-.PHONY: claude-cloud claude-ollama build stop-cloud stop-ollama help
+.PHONY: claude-cloud claude-ollama bash-cloud bash-ollama build stop-cloud stop-ollama help
 
 # Extract extra arguments passed after the target name.
 # Usage: make claude-ollama -- /path/to/project --model gpt-oss:latest
-ifneq (,$(filter claude-cloud claude-ollama,$(firstword $(MAKECMDGOALS))))
+ifneq (,$(filter claude-cloud claude-ollama bash-cloud bash-ollama,$(firstword $(MAKECMDGOALS))))
   _RAW_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  # Strip leading -- separator if present
+  ifeq (--,$(firstword $(_RAW_ARGS)))
+    _RAW_ARGS := $(wordlist 2,$(words $(_RAW_ARGS)),$(_RAW_ARGS))
+  endif
   # If first arg doesn't start with '-', treat it as WORKSPACE_DIR
   _FIRST_ARG := $(firstword $(_RAW_ARGS))
   ifneq (,$(filter-out -%,$(_FIRST_ARG)))
@@ -20,7 +24,7 @@ CLOUD_SERVICE  := claude-code-cloud
 OLLAMA_SERVICE := claude-code
 
 # Default workspace is current directory, can be overridden with WORKSPACE_DIR
-WORKSPACE_DIR ?= $(PWD)
+WORKSPACE_DIR ?= $(CURDIR)
 
 help: ## Show available commands
 	@echo "Usage:"
@@ -28,6 +32,8 @@ help: ## Show available commands
 	@echo "  make claude-ollama             Run Claude Code with Ollama"
 	@echo "  make claude-cloud  -- [PATH] [ARGS]   Run with custom workspace path and args"
 	@echo "  make claude-ollama -- [PATH] [ARGS]   Run with custom workspace path and args"
+	@echo "  make bash-cloud                Open a bash shell (cloud image)"
+	@echo "  make bash-ollama               Open a bash shell (Ollama image)"
 	@echo "  make build                     Build the Docker image"
 	@echo "  make stop-cloud                Stop cloud containers"
 	@echo "  make stop-ollama               Stop Ollama containers"
@@ -49,6 +55,12 @@ claude-cloud: ## Run Claude Code with Anthropic cloud API
 
 claude-ollama: ## Run Claude Code with Ollama
 	docker compose $(OLLAMA_COMPOSE) run --rm -v $(WORKSPACE_DIR):/workspace -w /workspace $(OLLAMA_SERVICE) claude $(ARGS)
+
+bash-cloud: ## Open a bash shell in the cloud container
+	docker compose $(CLOUD_COMPOSE) run --rm -v $(WORKSPACE_DIR):/workspace -w /workspace $(CLOUD_SERVICE) bash
+
+bash-ollama: ## Open a bash shell in the Ollama container
+	docker compose $(OLLAMA_COMPOSE) run --rm -v $(WORKSPACE_DIR):/workspace -w /workspace $(OLLAMA_SERVICE) bash
 
 stop-cloud: ## Stop cloud containers
 	docker compose $(CLOUD_COMPOSE) down
