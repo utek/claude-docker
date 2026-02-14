@@ -54,6 +54,9 @@ RUN useradd -m -s /bin/bash -u 1000 claude \
     && echo "{}" > /home/claude/.claude.json \
     && chown -R claude:claude /config /home/claude /workspace
 
+# Stage project skills for syncing into the volume at startup
+COPY --chown=claude:claude .claude/skills/ /opt/claude-skills/
+
 # Add entrypoint for Docker socket permission handling
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
