@@ -28,4 +28,4 @@ jobs:
 
       - name: Test Docker image
         run: |
-          docker run --rm claude-code:ci-test claude --version
+          docker run --rm --user root claude-code:ci-test claude --version
