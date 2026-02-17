@@ -51,16 +51,16 @@ build: ## Build the Docker image
 	docker compose $(CLOUD_COMPOSE) build
 
 claude-cloud: ## Run Claude Code with Anthropic cloud API
-	docker compose $(CLOUD_COMPOSE) run --rm -v $(WORKSPACE_DIR):/workspace -w /workspace $(CLOUD_SERVICE) claude $(ARGS)
+	docker compose $(CLOUD_COMPOSE) run --rm --service-ports -v $(WORKSPACE_DIR):/workspace -w /workspace $(CLOUD_SERVICE) claude $(ARGS)
 
 claude-ollama: ## Run Claude Code with Ollama
-	docker compose $(OLLAMA_COMPOSE) run --rm -v $(WORKSPACE_DIR):/workspace -w /workspace $(OLLAMA_SERVICE) claude $(ARGS)
+	docker compose $(OLLAMA_COMPOSE) run --rm --service-ports -v $(WORKSPACE_DIR):/workspace -w /workspace $(OLLAMA_SERVICE) claude $(ARGS)
 
 bash-cloud: ## Open a bash shell in the cloud container
-	docker compose $(CLOUD_COMPOSE) run --rm -v $(WORKSPACE_DIR):/workspace -w /workspace $(CLOUD_SERVICE) bash
+	docker compose $(CLOUD_COMPOSE) run --rm --service-ports -v $(WORKSPACE_DIR):/workspace -w /workspace $(CLOUD_SERVICE) bash
 
 bash-ollama: ## Open a bash shell in the Ollama container
-	docker compose $(OLLAMA_COMPOSE) run --rm -v $(WORKSPACE_DIR):/workspace -w /workspace $(OLLAMA_SERVICE) bash
+	docker compose $(OLLAMA_COMPOSE) run --rm --service-ports -v $(WORKSPACE_DIR):/workspace -w /workspace $(OLLAMA_SERVICE) bash
 
 stop-cloud: ## Stop cloud containers
 	docker compose $(CLOUD_COMPOSE) down
