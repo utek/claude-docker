@@ -13,6 +13,7 @@ services:
       - GITHUB_TOKEN
       - GH_CONFIG_DIR=/config/gh
       - GIT_CONFIG_GLOBAL=/config/git/config
+      - MCP_OAUTH_CALLBACK_PORT=51882
     volumes:
       - .:/workspace
       - claude-config:/home/claude/.claude
@@ -22,6 +23,8 @@ services:
       - git-config:/config/git
       # Docker sibling mode: mount host Docker socket
       - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "51882:51882"
     healthcheck:
       test: ["CMD", "claude", "--version"]
       interval: 30s
