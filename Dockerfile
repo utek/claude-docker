@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     gnupg \
+    jq \
     gosu \
     lsb-release \
     openssh-client \
@@ -83,7 +84,14 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-too
 # Install uv (Python package manager)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install Claude Code
+# Install Python tools
+RUN uv tool install pyright && uv tool install ruff
+
+# Install just (command runner)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /home/claude/.local/bin
+
+# Install Claude Code (ARG busts cache so we always get the latest version)
+ARG CLAUDE_CACHE_BUST
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
 WORKDIR /workspace

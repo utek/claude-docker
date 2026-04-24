@@ -23,6 +23,13 @@ OLLAMA_COMPOSE := -f docker-compose.yml
 CLOUD_SERVICE  := claude-code-cloud
 OLLAMA_SERVICE := claude-code
 
+# Current datetime used as a Docker build-arg to bust the cache (cross-platform).
+ifeq ($(OS),Windows_NT)
+  CLAUDE_CACHE_BUST := $(shell powershell -NoProfile -Command "Get-Date -Format yyyyMMddHHmmss")
+else
+  CLAUDE_CACHE_BUST := $(shell date -u +%Y%m%d%H%M%S)
+endif
+
 # Default workspace is current directory, can be overridden with WORKSPACE_DIR
 WORKSPACE_DIR ?= $(CURDIR)
 
@@ -47,6 +54,7 @@ help: ## Show available commands
 	@echo "  make claude-ollama -- --model gpt-oss:latest"
 	@echo "  WORKSPACE_DIR=~/project make claude-ollama"
 
+build: export CLAUDE_CACHE_BUST := $(CLAUDE_CACHE_BUST)
 build: ## Build the Docker image
 	docker compose $(CLOUD_COMPOSE) build
 

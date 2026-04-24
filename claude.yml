@@ -1,6 +1,9 @@
 services:
   claude-code-cloud:
-    build: .
+    build:
+      context: .
+      args:
+        CLAUDE_CACHE_BUST: ${CLAUDE_CACHE_BUST:-0}
     image: claude-code:local
     tty: true
     stdin_open: true
@@ -23,8 +26,8 @@ services:
       - git-config:/config/git
       # Docker sibling mode: mount host Docker socket
       - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - "51882:51882"
+    # ports:
+    #   - "51882:51882"
     healthcheck:
       test: ["CMD", "claude", "--version"]
       interval: 30s
