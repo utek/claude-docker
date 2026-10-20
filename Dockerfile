@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python-is-python3 \
     software-properties-common \
+    unzip \
     build-essential \
     pkg-config \
     libssl-dev \
@@ -59,11 +60,17 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     && apt-get install -y --no-install-recommends terraform \
     && rm -rf /var/lib/apt/lists/*
 
+# Install AWS CLI v2
+RUN curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o /tmp/awscliv2.zip \
+    && unzip -q /tmp/awscliv2.zip -d /tmp \
+    && /tmp/aws/install \
+    && rm -rf /tmp/aws /tmp/awscliv2.zip
+
 # Create non-root user and directories
 RUN useradd -m -s /bin/bash -u 1000 claude \
     && groupadd -f docker \
     && usermod -aG docker claude \
-    && mkdir -p /config/gh /config/git /home/claude/.claude /home/claude/.config/claude /workspace \
+    && mkdir -p /config/gh /config/git /home/claude/.claude /home/claude/.config/claude /home/claude/.aws /workspace \
     && echo "{}" > /home/claude/.claude.json \
     && chown -R claude:claude /config /home/claude /workspace
 
@@ -85,7 +92,7 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-too
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Install Python tools
-RUN uv tool install pyright && uv tool install ruff
+RUN uv tool install pyright && uv tool install ruff && uv tool install pre-commit
 
 # Install just (command runner)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /home/claude/.local/bin

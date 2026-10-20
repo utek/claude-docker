@@ -26,6 +26,7 @@ services:
       - claude-xdg-config:/home/claude/.config/claude
       - gh-config:/config/gh
       - git-config:/config/git
+      - aws-config:/home/claude/.aws
       # Docker sibling mode: mount host Docker socket
       - /var/run/docker.sock:/var/run/docker.sock
     # ports:
@@ -45,3 +46,4 @@ volumes:
   claude-xdg-config:
   gh-config:
   git-config:
+  aws-config:
